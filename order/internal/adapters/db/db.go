@@ -79,7 +79,7 @@ func (a Adapter) Save(ctx context.Context, order *domain.Order) error {
 		Status:     order.Status,
 		OrderItems: orderItems,
 	}
-	res := a.db.Create(orderModel)
+	res := a.db.Create(&orderModel)
 	if res.Error == nil {
 		order.ID = int64(orderModel.ID)
 	}
