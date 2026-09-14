@@ -1,5 +1,7 @@
 github.com/Fulim13/microservices-proto/golang/order v1.0.2 h1:ppxbPmknnCFF2Yc8cjyzoZavmjrSgYLtI7D25Dz0YcU=
 github.com/Fulim13/microservices-proto/golang/order v1.0.2/go.mod h1:/xFMVb0vQz1An8WJIL9m0FhAJrKmxeMD6erQdP17nio=
+github.com/Fulim13/microservices-proto/golang/payment v1.0.2 h1:NXpCxboVQtPaaNU3qbHjrU6XzXTAY2zyFaD1JugnyVA=
+github.com/Fulim13/microservices-proto/golang/payment v1.0.2/go.mod h1:4MqdeioJFQA9p6vJeWG7dfAhmICuyBkmsBdFk7YX10Y=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -14,6 +14,10 @@ func GetDataSourceURL() string {
 	return getEnvironmentValue("DATA_SOURCE_URL")
 }
 
+func GetPaymentServiceUrl() string {
+	return getEnvironmentValue("PAYMENT_SERVICE_URL")
+}
+
 func GetApplicationPort() int {
 	portStr := getEnvironmentValue("APPLICATION_PORT")
 	port, err := strconv.Atoi(portStr)
@@ -23,10 +27,6 @@ func GetApplicationPort() int {
 	}
 
 	return port
-}
-
-func GetPaymentServiceUrl() string {
-	return getEnvironmentValue("PAYMENT_SERVICE_URL")
 }
 
 func getEnvironmentValue(key string) string {
