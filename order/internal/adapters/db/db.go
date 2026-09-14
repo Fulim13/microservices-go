@@ -19,6 +19,7 @@ type Order struct {
 }
 
 type OrderItem struct {
+	gorm.Model
 	ProductCode string
 	Unit_Price  float32
 	Quantity    int32
