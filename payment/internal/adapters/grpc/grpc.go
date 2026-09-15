@@ -12,6 +12,8 @@ import (
 
 func (a Adapter) Create(ctx context.Context, request *payment.CreatePaymentRequest) (*payment.CreatePaymentResponse, error) {
 	// time.Sleep(4 * time.Second)
+	// fmt.Println("In Payment service")
+	// return nil, status.New(codes.Unavailable, fmt.Sprint("payment service unavailable.")).Err()
 	newPayment := domain.NewPayment(request.UserId, request.OrderId, request.TotalPrice)
 	result, err := a.api.Charge(ctx, newPayment)
 	if err != nil {
