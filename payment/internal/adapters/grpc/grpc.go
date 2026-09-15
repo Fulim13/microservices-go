@@ -11,6 +11,7 @@ import (
 )
 
 func (a Adapter) Create(ctx context.Context, request *payment.CreatePaymentRequest) (*payment.CreatePaymentResponse, error) {
+	// time.Sleep(4 * time.Second)
 	newPayment := domain.NewPayment(request.UserId, request.OrderId, request.TotalPrice)
 	result, err := a.api.Charge(ctx, newPayment)
 	if err != nil {
