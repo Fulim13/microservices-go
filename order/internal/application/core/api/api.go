@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"strings"
 
 	"github.com/Fulim13/microservices-go/order/internal/application/core/domain"
 	"github.com/Fulim13/microservices-go/order/internal/ports"
@@ -26,10 +27,19 @@ func (a Application) PlaceOrder(ctx context.Context, order domain.Order) (domain
 	}
 	paymentErr := a.payment.Charge(&order)
 	if paymentErr != nil {
-		st, _ := status.FromError(paymentErr)
+		st := status.Convert(paymentErr)
+		var allErrors []string
+		for _, detail := range st.Details() {
+			switch t := detail.(type) {
+			case *errdetails.BadRequest:
+				for _, violation := range t.GetFieldViolations() {
+					allErrors = append(allErrors, violation.Description)
+				}
+			}
+		}
 		fieldErr := &errdetails.BadRequest_FieldViolation{
 			Field:       "payment",
-			Description: st.Message(),
+			Description: strings.Join(allErrors, "\n"),
 		}
 		badReq := &errdetails.BadRequest{}
 		badReq.FieldViolations = append(badReq.FieldViolations, fieldErr)
