@@ -3,14 +3,11 @@ package payment
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/Fulim13/microservices-go/order/internal/application/core/domain"
 	"github.com/Fulim13/microservices-proto/golang/payment"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/sony/gobreaker"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -19,24 +16,30 @@ type Adapter struct {
 	payment payment.PaymentClient
 }
 
+func CircuitBreakerClientInterceptor(cb *gobreaker.CircuitBreaker) grpc.UnaryClientInterceptor {
+	return func(
+		ctx context.Context,
+		method string,
+		req, reply interface{},
+		cc *grpc.ClientConn,
+		invoker grpc.UnaryInvoker,
+		opts ...grpc.CallOption,
+	) error {
+		_, cbErr := cb.Execute(func() (interface{}, error) {
+			err := invoker(ctx, method, req, reply, cc, opts...)
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, nil
+		})
+		return cbErr
+	}
+}
+
 func NewAdapter(paymentServiceUrl string) (*Adapter, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	opts = append(opts, grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(
-		grpc_retry.WithCodes(codes.Unavailable, codes.ResourceExhausted),
-		grpc_retry.WithMax(5),
-		grpc_retry.WithBackoff(grpc_retry.BackoffLinear(time.Second)))))
-	conn, err := grpc.NewClient(paymentServiceUrl, opts...)
-	if err != nil {
-		return nil, err
-	}
-	client := payment.NewPaymentClient(conn)
-	return &Adapter{payment: client}, nil
-}
-
-// go get -u github.com/sony/gobreaker
-func (a *Adapter) Charge(order *domain.Order) error {
-	// ctx, _ := context.WithTimeout(context.TODO(), time.Second*3)
 	cb := gobreaker.NewCircuitBreaker(gobreaker.Settings{
 		Name:        "cbPayment", // Unique name of circuit breaker
 		MaxRequests: 0,           // Allowed number of requests for half open circult
@@ -49,19 +52,21 @@ func (a *Adapter) Charge(order *domain.Order) error {
 			log.Printf("Circuit Breaker: %s, changed from %v, to %v", name, from, to)
 		},
 	})
-
-	paymentResponse, errCreate := cb.Execute(func() (interface{}, error) {
-		return a.payment.Create(context.Background(), &payment.CreatePaymentRequest{
-			UserId:     order.CustomerID,
-			OrderId:    order.ID,
-			TotalPrice: order.TotalPrice(),
-		})
-	})
-	if errCreate != nil {
-		log.Printf("Failed to create payment. Err: %v", errCreate)
-	} else {
-		log.Printf("Payment %d is created successfully.", paymentResponse.(*payment.CreatePaymentResponse).PaymentId)
+	opts = append(opts, grpc.WithUnaryInterceptor(CircuitBreakerClientInterceptor(cb)))
+	conn, err := grpc.NewClient(paymentServiceUrl, opts...)
+	if err != nil {
+		return nil, err
 	}
+	client := payment.NewPaymentClient(conn)
+	return &Adapter{payment: client}, nil
+}
 
-	return errCreate
+// go get -u github.com/sony/gobreaker
+func (a *Adapter) Charge(order *domain.Order) error {
+	_, err := a.payment.Create(context.Background(), &payment.CreatePaymentRequest{
+		UserId:     order.CustomerID,
+		OrderId:    order.ID,
+		TotalPrice: order.TotalPrice(),
+	})
+	return err
 }
