@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: order
+  labels:
+    service: order
+spec:
+  # Must match the pod labels in deployment-order.yaml, or this Service
+  # gets zero endpoints and every call times out.
+  selector:
+    service: order
+  ports:
+    - name: grpc
+      port: 3000
+      protocol: TCP
+      targetPort: 3000

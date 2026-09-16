@@ -1,0 +1,33 @@
+# NOTE: gRPC requires HTTP/2, and ingress-nginx only speaks HTTP/2 on its
+# TLS (443) listener -- port 80 is HTTP/1.1. So plaintext gRPC through this
+# ingress does NOT work, no matter the annotations below. To exercise the
+# ingress path you must add a TLS block with a (self-signed is fine) cert and
+# call it with `grpcurl -insecure`.
+#
+# For day-to-day testing, bypass the ingress entirely:
+#   kubectl port-forward svc/order 3000:3000
+#   grpcurl -plaintext localhost:3000 Order/Create ...
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: order-ingress
+  annotations:
+    # Tells nginx to proxy to the backend over gRPC rather than HTTP.
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    # Disables the automatic 308 redirect to HTTPS (the "disable TLS" line).
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # NOTE: no rewrite-target here on purpose. gRPC encodes the method as the
+    # HTTP path (/Order/Create), so rewriting to / breaks every call.
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # Prefix / so all gRPC service paths reach the order service.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: order
+                port:
+                  number: 3000

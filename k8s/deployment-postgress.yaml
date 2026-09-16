@@ -1,0 +1,51 @@
+# Postgres creates only the database named in POSTGRES_DB. This init script
+# adds the second one. Scripts in /docker-entrypoint-initdb.d run once, on
+# first startup of an empty data directory.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+data:
+  create-payment-db.sql: |
+    CREATE DATABASE payment;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    service: postgres
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      service: postgres
+  template:
+    metadata:
+      labels:
+        service: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "verysecretpass"
+            - name: POSTGRES_DB
+              value: "order"
+          volumeMounts:
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+        # emptyDir means all data is lost when the pod restarts. Fine for
+        # local development; use a PersistentVolumeClaim if you need it kept.
+        - name: data
+          emptyDir: {}

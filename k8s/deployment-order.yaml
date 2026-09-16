@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order
+  labels:
+    service: order
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      service: order
+  template:
+    metadata:
+      labels:
+        service: order
+    spec:
+      containers:
+        - name: order
+          image: order:latest
+          # Image is side-loaded with `kind load docker-image`, never pulled
+          # from a registry. Without this, :latest defaults to Always -> ErrImagePull.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 3000
+          env:
+            - name: ENV
+              value: "development"
+            - name: APPLICATION_PORT
+              value: "3000"
+            # `postgres` and `payment` are Service names, resolved by CoreDNS.
+            - name: DATA_SOURCE_URL
+              value: "postgres://postgres:verysecretpass@postgres:5432/order?sslmode=disable"
+            - name: PAYMENT_SERVICE_URL
+              value: "payment:3001"

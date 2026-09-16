@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment
+  labels:
+    service: payment
+spec:
+  # This name is what order dials via PAYMENT_SERVICE_URL=payment:3001.
+  selector:
+    service: payment
+  ports:
+    - name: grpc
+      port: 3001
+      protocol: TCP
+      targetPort: 3001
