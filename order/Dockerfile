@@ -7,7 +7,8 @@ FROM scratch
 COPY --from=builder /usr/src/app/order /order
 
 # Required at runtime, set via k8s/deployment-order.yaml (see README.md):
-#   ENV, APPLICATION_PORT, DATA_SOURCE_URL, PAYMENT_SERVICE_URL
+#   ENV, APPLICATION_PORT, DATA_SOURCE_URL, PAYMENT_SERVICE_URL,
+#   OTEL_EXPORTER_OTLP_ENDPOINT
 EXPOSE 3000
 CMD ["/order"]
 
