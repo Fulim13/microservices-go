@@ -35,6 +35,18 @@ grpcurl \
 
 ## How to run in Kubernetes
 
+### The short version
+
+```sh
+make up     # create the cluster, install ingress-nginx + Jaeger, build and deploy
+make test   # place one order
+make trace  # Jaeger UI on http://localhost:16686
+make down   # delete the cluster and everything in it
+```
+
+`make` on its own lists every target. The rest of this section is the same
+thing done by hand, for when you want to see the individual steps.
+
 ### Create Cluster
 
 ```sh
@@ -58,7 +70,8 @@ kind load docker-image payment:latest --name ecommerce
 ### Label the control-plane node
 
 Only this node has the hostPort 80/443 mappings, so the ingress controller has
-to land there.
+to land there. `k8s/cluster-ecommerce.yaml` now applies this label at cluster
+creation, so this step is only needed for a cluster created before that.
 
 ```sh
 kubectl label nodes ecommerce-control-plane ingress-ready=true
@@ -97,6 +110,26 @@ kubectl apply -f k8s/svc-payment.yaml
 
 ```sh
 kubectl apply -f k8s/ingress-nginx.yaml
+```
+
+### Install Jaeger
+
+Both services export OTLP traces over HTTP to this release. The all-in-one
+chart puts the collector and the query UI behind a single `jaeger` Service.
+
+```sh
+helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
+helm upgrade --install jaeger jaegertracing/jaeger \
+  --namespace observability --create-namespace \
+  --version 4.13.1 \
+  --set provisionDataStore.cassandra=false \
+  --set storage.type=memory \
+  --set allInOne.enabled=true \
+  --set agent.enabled=false \
+  --set collector.enabled=false \
+  --set query.enabled=false
+
+kubectl port-forward -n observability svc/jaeger 16686:16686
 ```
 
 ### Check everything is wired up
