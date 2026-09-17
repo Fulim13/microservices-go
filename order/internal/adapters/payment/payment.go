@@ -7,6 +7,7 @@ import (
 	"github.com/Fulim13/microservices-go/order/internal/application/core/domain"
 	"github.com/Fulim13/microservices-proto/golang/payment"
 	"github.com/sony/gobreaker"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -40,6 +41,7 @@ func CircuitBreakerClientInterceptor(cb *gobreaker.CircuitBreaker) grpc.UnaryCli
 func NewAdapter(paymentServiceUrl string) (*Adapter, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
 	cb := gobreaker.NewCircuitBreaker(gobreaker.Settings{
 		Name:        "cbPayment", // Unique name of circuit breaker
 		MaxRequests: 0,           // Allowed number of requests for half open circult
@@ -62,15 +64,16 @@ func NewAdapter(paymentServiceUrl string) (*Adapter, error) {
 }
 
 // Circuit Breaker
-// - Connection between services are called circuits
-// - If the error rate of an interservice communication reach a threshold value, it will
-//   open the circuit (which means connection between two services are closed)
-// - Request to the dependent service will fail immediately
-// - The circuit will be reset after certain reset timeout, then it will go to half open,
-//   if the failure rate is below threshold, it will close the circuit, else open the circuit
+//   - Connection between services are called circuits
+//   - If the error rate of an interservice communication reach a threshold value, it will
+//     open the circuit (which means connection between two services are closed)
+//   - Request to the dependent service will fail immediately
+//   - The circuit will be reset after certain reset timeout, then it will go to half open,
+//     if the failure rate is below threshold, it will close the circuit, else open the circuit
+//
 // go get -u github.com/sony/gobreaker
-func (a *Adapter) Charge(order *domain.Order) error {
-	_, err := a.payment.Create(context.Background(), &payment.CreatePaymentRequest{
+func (a *Adapter) Charge(ctx context.Context, order *domain.Order) error {
+	_, err := a.payment.Create(ctx, &payment.CreatePaymentRequest{
 		UserId:     order.CustomerID,
 		OrderId:    order.ID,
 		TotalPrice: order.TotalPrice(),

@@ -29,6 +29,10 @@ func GetApplicationPort() int {
 	return port
 }
 
+func GetOtelEndpoint() string {
+	return getEnvironmentValue("OTEL_EXPORTER_OTLP_ENDPOINT")
+}
+
 func getEnvironmentValue(key string) string {
 	if os.Getenv(key) == "" {
 		log.Fatalf("%s environment variable is missing.", key)

@@ -8,6 +8,7 @@ import (
 	"github.com/Fulim13/microservices-go/payment/config"
 	"github.com/Fulim13/microservices-go/payment/internal/ports"
 	"github.com/Fulim13/microservices-proto/golang/payment"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc/reflection"
 
 	"google.golang.org/grpc"
@@ -33,7 +34,9 @@ func (a Adapter) Run() {
 		log.Fatalf("failed to listen on port %d, error: %v", a.port, err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	payment.RegisterPaymentServer(grpcServer, a)
 	if config.GetEnv() == "development" {
 		reflection.Register(grpcServer)

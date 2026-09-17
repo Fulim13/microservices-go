@@ -28,3 +28,5 @@ spec:
               value: "3001"
             - name: DATA_SOURCE_URL
               value: "postgres://postgres:verysecretpass@postgres:5432/payment?sslmode=disable"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: 'jaeger.observability.svc.cluster.local:4318'

@@ -25,7 +25,7 @@ func (a Application) PlaceOrder(ctx context.Context, order domain.Order) (domain
 	if err != nil {
 		return domain.Order{}, nil
 	}
-	paymentErr := a.payment.Charge(&order)
+	paymentErr := a.payment.Charge(ctx, &order)
 	if paymentErr != nil {
 		st := status.Convert(paymentErr)
 		var allErrors []string
