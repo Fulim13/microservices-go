@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/Fulim13/microservices-go/order/internal/application/core/domain"
@@ -21,9 +22,11 @@ func NewApplication(db ports.DBPort, payment ports.PaymentPort) *Application {
 }
 
 func (a Application) PlaceOrder(ctx context.Context, order domain.Order) (domain.Order, error) {
-	err := a.db.Save(ctx, &order)
-	if err != nil {
-		return domain.Order{}, nil
+	if err := a.db.Save(ctx, &order); err != nil {
+		// Log the cause server-side, but return a generic status: the raw
+		// driver error can carry connection details the caller shouldn't see.
+		log.Printf("failed to save order for customer %d: %v", order.CustomerID, err)
+		return domain.Order{}, status.Error(codes.Internal, "order creation failed")
 	}
 	paymentErr := a.payment.Charge(ctx, &order)
 	if paymentErr != nil {
